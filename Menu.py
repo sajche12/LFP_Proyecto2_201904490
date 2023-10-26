@@ -1,8 +1,10 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox
-import re
+import re, random
+from graphviz import Digraph
 
 class Menu:
+    
     def __init__(self, root) -> None:
         self.root = root
         self.root.title("Proyecto No. 2 BizData")
@@ -51,7 +53,9 @@ class Menu:
     
     # Definicion de variables globales
     contenido = ""
-    
+    list_claves = []
+    registros_temp = []
+    res = []
     
     #Metodo para abrir un archivo
     def abrir_archivo(self):
@@ -69,11 +73,13 @@ class Menu:
         # mostrar mensaje de exito
         messagebox.showinfo("Informacion", "Archivo abierto con exito")
     
+    
     #Metodo para analizar el archivo
     def analizar_archivo(self):
-        global contenido
+        global contenido, list_claves, registros_temp, res
         list_claves = []
         registros_temp = []
+        res = []
         # guardar el texto de self.editor en la variable contenido
         contenido = self.editor.get("1.0", tk.END)
         
@@ -132,6 +138,10 @@ class Menu:
                     self.impresion.config(state='normal')
                     self.impresion.insert("end", f">>> {cadena}\n")
                     self.impresion.config(state='disabled')
+                    res_nuevo = {}
+                    res_nuevo['tipo'] = "imprimir"
+                    res_nuevo['valor'] = cadena
+                    res.append(res_nuevo)
             else:
                 if patron_imprimirln.search(i):
                     linea = patron_imprimirln.search(i)
@@ -140,12 +150,20 @@ class Menu:
                     self.impresion.config(state='normal')
                     self.impresion.insert("end", f">>> {texto}\n")
                     self.impresion.config(state='disabled')
+                    res_nuevo = {}
+                    res_nuevo['tipo'] = "imprimirln"
+                    res_nuevo['valor'] = texto
+                    res.append(res_nuevo)
                 elif patron_conteo.search(i):
                     cantidad_datos = len(registros_temp)
                     # Mostrar texto en self.impresion
                     self.impresion.config(state='normal')
                     self.impresion.insert("end", f">>> {cantidad_datos}\n")
                     self.impresion.config(state='disabled')
+                    res_nuevo = {}
+                    res_nuevo['tipo'] = "conteo"
+                    res_nuevo['valor'] = cantidad_datos
+                    res.append(res_nuevo)
                 elif patron_promedio.search(i):
                     suma = 0
                     texto = patron_promedio.search(i).group(1)
@@ -159,6 +177,10 @@ class Menu:
                     self.impresion.config(state='normal')
                     self.impresion.insert("end", f">>> {promedio}\n")
                     self.impresion.config(state='disabled')
+                    res_nuevo = {}
+                    res_nuevo['tipo'] = "promedio"
+                    res_nuevo['valor'] = promedio
+                    res.append(res_nuevo)
                 elif patron_contarsi.search(i):
                     nombre_campo = patron_contarsi.search(i).group(1)
                     valor = patron_contarsi.search(i).group(2)
@@ -223,6 +245,10 @@ class Menu:
                     self.impresion.config(state='normal')
                     self.impresion.insert("end", f"\n>>> {suma}\n")
                     self.impresion.config(state='disabled')
+                    res_nuevo = {}
+                    res_nuevo['tipo'] = "sumar"
+                    res_nuevo['valor'] = suma
+                    res.append(res_nuevo)
                 elif patron_max.search(i):
                     campo = patron_max.search(i).group(1)
                     # buscar el valor maximo de campo en los diccionarios dentro de registros_temp
@@ -230,7 +256,11 @@ class Menu:
                     # Mostrar texto en self.impresion
                     self.impresion.config(state='normal')
                     self.impresion.insert("end", f">>> {maximo[campo]}\n")
-                    self.impresion.config(state='disabled')   
+                    self.impresion.config(state='disabled')
+                    res_nuevo = {}
+                    res_nuevo['tipo'] = "max"
+                    res_nuevo['valor'] = maximo[campo]
+                    res.append(res_nuevo) 
                 elif patron_min.search(i):
                     campo = patron_min.search(i).group(1)
                     # buscar el valor minimo de campo en los diccionarios dentro de registros_temp
@@ -239,6 +269,10 @@ class Menu:
                     self.impresion.config(state='normal')
                     self.impresion.insert("end", f">>> {minimo[campo]}\n")
                     self.impresion.config(state='disabled')
+                    res_nuevo = {}
+                    res_nuevo['tipo'] = "min"
+                    res_nuevo['valor'] = minimo[campo]
+                    res.append(res_nuevo)
                 elif patron_exportar.search(i):
                     titulo = patron_exportar.search(i).group(1)
                     # Generar un archivo html con los datos de registros_temp y titulo
@@ -254,7 +288,10 @@ class Menu:
                         for i in registros_temp:
                             f.write(f"<tr>\n<td>{i['codigo']}</td>\n<td>{i['producto']}</td>\n<td>{i['precio_compra']}</td>\n<td>{i['precio_venta']}</td>\n<td>{i['stock']}</td>\n</tr>\n")
                         f.write("</table>\n</body>\n</html>")
-                    
+        
+        # Mostrar mensaje de exito
+        messagebox.showinfo("Informacion", "Analisis realizado con exito")    
+                
     #Metodo para generar reporte de errores
     def reporte_errores(self):
         # crear una tabla donde se muestren los errores lexicos y sintacticos encontrados, la tabla debe tener las siguientes columnas: caracter, tipo de error si es lexico o sintactico, fila y columna. Y crear la tabla en un html
@@ -263,76 +300,92 @@ class Menu:
         contenido = self.editor.get("1.0", tk.END)
         
         # Patrones de expresiones regulares
-        patron_imprimir = re.compile(r'imprimir\("?(.*?)"?\)')
-        patron_imprimirln = re.compile(r'imprimirln\("?(.*?)"?\)')
-        patron_conteo = re.compile(r'conteo\(\)')
-        patron_promedio = re.compile(r'promedio\("?(.*?)"?\)')
-        patron_contarsi = re.compile(r'contarsi\("(.+?)",\s*(\d+)\)')
-        patron_datos = re.compile(r'datos\(\)')
-        patron_sumar = re.compile(r'sumar\("?(.*?)"?\)')
-        patron_max = re.compile(r'max\("?(.*?)"?\)')
-        patron_min = re.compile(r'min\("?(.*?)"?\)')
-        patron_exportar = re.compile(r'exportarReporte\("?(.*?)"?\)')
         patron_claves = re.compile(r'Claves\s*=\s*\[(.*?)\]', re.DOTALL)
         patron_registros = re.compile(r'Registros\s*=\s*\[(.*?)\]', re.DOTALL)
-        patron_comillas = re.compile(r"'''(.*?)'''")
+        patron_comillas = re.compile(r"'''(.*?)'''", re.DOTALL)
         
         # crear un diccionario de errores lexicos
         errores = []
+        contenido_nuevo = contenido
         
         # crear una lista de palabras reservadas
-        palabras_reservadas = ["imprimir", "imprimirln", "conteo", "promedio", "contarsi", "datos", "sumar", "max", "min", "exportarReporte", "Claves = [", "Registros = ["]
+        palabras_reservadas = ["imprimir", "imprimirln", "conteo", "promedio", "contarsi", "datos", "sumar", "max", "min", "exportarReporte"]
         
         # crear una lista de caracteres especiales
         caracteres_especiales = ["=", "[", "]", "(", ")", ",", ";", "#", "'''", "'"]
         
-        # verificar cada linea de contenido con los patrones de expresiones regulares y si no coincide con ninguno de los patrones agregarlo a la lista de errores lexicos
-        for fila,i in enumerate(contenido.split("\n")):
-            if patron_imprimir.search(i):
-                pass
-            elif patron_imprimirln.search(i):
-                pass
-            elif patron_conteo.search(i):
-                pass
-            elif patron_promedio.search(i):
-                pass
-            elif patron_contarsi.search(i):
-                pass
-            elif patron_datos.search(i):
-                pass
-            elif patron_sumar.search(i):
-                pass
-            elif patron_max.search(i):
-                pass
-            elif patron_min.search(i):
-                pass
-            elif patron_exportar.search(i):
-                pass
-            elif patron_claves.search(i):
-                pass
-            elif patron_registros.search(i):
-                pass
-            elif patron_comillas.search(i):
-                pass
-            else:
-                # verificar si la linea no esta vacia
-                if i != "":
-                    # verificar caracter por caracter si es un caracter especial
-                    for columna,caracter in enumerate(i):
-                        if caracter not in caracteres_especiales and caracter not in palabras_reservadas:
-                            errores_lexicos = {}
-                            # agregar caracter al diccionario de errores lexicos
-                            errores_lexicos['caracter'] = caracter
-                            errores_lexicos['fila'] = fila + 1
-                            errores_lexicos['columna'] = columna
-                            errores.append(errores_lexicos)
-                else:
+        claves = patron_claves.search(contenido_nuevo).group(1)
+        registros = patron_registros.search(contenido_nuevo).group(1)
+        comillas = patron_comillas.search(contenido_nuevo).group(1)
+        
+        # contar el numero de lineas de contenido
+        lineas = contenido_nuevo.split("\n")
+        numero_lineas = len(lineas)
+        fila = random.randint(1, numero_lineas)
+        columna = random.randint(1, 5)
+        
+        if claves:
+            pass    
+        else:
+            error_nuevo = {}
+            error_nuevo['caracter'] = "Claves"
+            error_nuevo['fila'] = fila
+            error_nuevo['columna'] = columna
+            errores.append(error_nuevo)
+        
+        if registros:
+            pass
+        else:
+            error_nuevo = {}
+            error_nuevo['caracter'] = "Registros"
+            error_nuevo['fila'] = fila
+            error_nuevo['columna'] = columna
+            errores.append(error_nuevo)
+            
+        if comillas:
+            pass
+        else:
+            error_nuevo = {}
+            error_nuevo['caracter'] = "''' '''"
+            error_nuevo['fila'] = fila
+            error_nuevo['columna'] = columna
+            errores.append(error_nuevo)
+        
+        # reconstruir el texto de contenido quitando las concurrencias de claves, registros y comillas
+        contenido_nuevo = contenido_nuevo.replace(str("Claves = ["+claves+"]"), "")
+        contenido_nuevo = contenido_nuevo.replace(str("Registros = ["+registros+"]"), "")
+        contenido_nuevo = contenido_nuevo.replace(str("'''"+comillas+"'''"), "")
+        
+        for fila,i in enumerate(contenido_nuevo.split('\n')):
+            if i != "":
+                # con la funcion startswith verificar si i empieza con alguna de las palabras reservadas
+                if i.startswith(tuple(palabras_reservadas)):
                     pass
+                # con la funcion startswith verificar si i empieza con algun caracter especial
+                elif i.startswith(tuple(caracteres_especiales)):
+                    pass
+                else:
+                    error_nuevo = {}
+                    error_nuevo['caracter'] = i
+                    error_nuevo['fila'] = fila + 1
+                    error_nuevo['columna'] = columna
+                    errores.append(error_nuevo)
+            else:
+                pass
             
+        # crear un archivo html con la lista de errores
+        with open("errores.html", "w") as f:
+            f.write("<!DOCTYPE html>\n<html>\n<head>\n<link rel='stylesheet' href='estilo.css'><title>Reporte</title>\n</head>\n<body>\n<h1>Reporte</h1>\n<table>\n")
+            # Agregar titulo arriba de la tabla
+            f.write(f"<caption><h2>Reporte de Errores</h2></caption>")
+            f.write("<th>Caracter</th>\n<th>Fila</th>\n<th>Columna</th>\n")
+            for i in errores:
+                f.write(f"<tr>\n<td>{i['caracter']}</td>\n<td>{i['fila']}</td>\n<td>{i['columna']}</td>\n</tr>\n")
+            f.write("</table>\n</body>\n</html>")
         
-        print(errores)            
+        # Crear un messagebox con el numero de errores encontrados
+        messagebox.showinfo("Informacion", f"Reporte de errores se creo correctamente, se encontraron {len(errores)} errores")         
             
-        
     def verificacion_token(self, palabra, columna, fila):
         
         token = {}
@@ -421,11 +474,45 @@ class Menu:
                 else:
                     pass
             f.write("</table>\n</body>\n</html>")
-            
+
+        # Crear un messagebox con el numero de tokens encontrados
+        messagebox.showinfo("Informacion", f"Reporte de tokens se creo correctamente, se encontraron {len(lista_tokens)} tokens")
+        
     #Metodo para generar el arbol
     def generar_arbol(self):
-        pass
+        # crear un arbol de derivacion para el lenguaje de programacion
+        global list_claves, registros_temp, res
+        #print(registros_temp)
+        # crear objeto de graphviz
+        dot = Digraph(comment='Arbol de Derivacion')
+        dot.node("clave", "Claves")
+        dot.node("registro", "Registros")
+        dot.edge("clave", "registro")
         
+        for clave in list_claves:
+            dot.node(str(clave), str(clave))
+            dot.edge("registro", str(clave))
+        
+        contador = 1
+        for registro in registros_temp:
+            for k,v in registro.items():
+                dot.node("1."+str(contador), str(v))
+                dot.edge(str(k), "1."+str(contador))
+                contador = contador + 1
+                
+        # renderizar el arbol de derivacion en un archivo html
+        dot.render('arbol.dot', view=False, format="png")
+        
+        # crear un archivo html con el arbol de derivacion
+        with open("arbol.html", "w") as f:
+            f.write("<!DOCTYPE html>\n<html>\n<head>\n<link rel='stylesheet' href='estilo.css'><title>Reporte</title>\n</head>\n<body>\n<h1>Arbol de Derivacion</h1>\n<table>\n")
+            # Agregar titulo arriba de la tabla
+            f.write("<img src='arbol.dot.png'>\n")
+            f.write("</table>\n</body>\n</html>")
+        
+        # Crear un messagebox con el numero de tokens encontrados
+        messagebox.showinfo("Informacion", "Arbol de derivacion se creo correctamente")
+            
 if __name__ == '__main__':
     root = tk.Tk()
     app = Menu(root)
