@@ -68,7 +68,7 @@ Tkinter también proporciona una amplia variedad de herramientas para trabajar c
 `r'exportarReporte\("?(.*?)"?\)'`
 
 ## Método del Árbol
-![arbol](/Documentacion/Imagenes/arbol.dot.png)
+![arbol](/Manuales/Imagenes/arbol.dot.png)
 
 ## Autómata Finito Determinista del analizador léxico
 **Tokens:** ver archivo HTML con tokens<br>
@@ -88,7 +88,7 @@ Tkinter también proporciona una amplia variedad de herramientas para trabajar c
 * (q3,texto) = q1
 * (q3,numero) = q2
 * (q3,signo) = q3<br><br>
-![AFD](/Documentacion/Imagenes/AFD.JPG)
+![AFD](/Manuales/Imagenes/AFD.JPG)
 
 ## Gramatica independiente del contexto del analizador sintactico
 **Definiendo reglas de produccion:**<br>
